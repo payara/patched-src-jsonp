@@ -37,6 +37,8 @@
  * only if the new code is made subject to such option by the copyright
  * holder.
  */
+// Portions Copyright 2024 Payara Foundation and/or its affiliates
+// Payara Foundation and/or its affiliates elects to include this software in this distribution under the GPL Version 2 license
 
 package org.glassfish.json;
 
@@ -52,26 +54,39 @@ import java.math.BigInteger;
  */
 abstract class JsonNumberImpl implements JsonNumber {
 
-    static JsonNumber getJsonNumber(int num) {
-        return new JsonIntNumber(num);
+    private int hashCode;
+    private final int bigIntegerScaleLimit;
+
+    JsonNumberImpl(int bigIntegerScaleLimit) {
+        this.bigIntegerScaleLimit = bigIntegerScaleLimit;
     }
 
-    static JsonNumber getJsonNumber(long num) {
-        return new JsonLongNumber(num);
+    static JsonNumber getJsonNumber(int num, int bigIntegerScaleLimit) {
+        return new JsonIntNumber(num, bigIntegerScaleLimit);
     }
 
-    static JsonNumber getJsonNumber(BigInteger value) {
-        return new JsonBigDecimalNumber(new BigDecimal(value));
+    static JsonNumber getJsonNumber(long num, int bigIntegerScaleLimit) {
+        return new JsonLongNumber(num, bigIntegerScaleLimit);
     }
 
-    static JsonNumber getJsonNumber(double value) {
+    static JsonNumber getJsonNumber(BigInteger value, int bigIntegerScaleLimit) {
+        if (value == null) {
+            throw new NullPointerException("Value is null");
+        }
+        return new JsonBigDecimalNumber(new BigDecimal(value), bigIntegerScaleLimit);
+    }
+
+    static JsonNumber getJsonNumber(double value, int bigIntegerScaleLimit) {
         //bigDecimal = new BigDecimal(value);
         // This is the preferred way to convert double to BigDecimal
-        return new JsonBigDecimalNumber(BigDecimal.valueOf(value));
+        return new JsonBigDecimalNumber(BigDecimal.valueOf(value), bigIntegerScaleLimit);
     }
 
-    static JsonNumber getJsonNumber(BigDecimal value) {
-        return new JsonBigDecimalNumber(value);
+    static JsonNumber getJsonNumber(BigDecimal value, int bigIntegerScaleLimit) {
+        if (value == null) {
+            throw new NullPointerException("Value is null");
+        }
+        return new JsonBigDecimalNumber(value, bigIntegerScaleLimit);
     }
 
     // Optimized JsonNumber impl for int numbers.
@@ -79,7 +94,8 @@ abstract class JsonNumberImpl implements JsonNumber {
         private final int num;
         private BigDecimal bigDecimal;  // assigning it lazily on demand
 
-        JsonIntNumber(int num) {
+        JsonIntNumber(int num, int bigIntegerScaleLimit) {
+            super(bigIntegerScaleLimit);
             this.num = num;
         }
 
@@ -135,7 +151,8 @@ abstract class JsonNumberImpl implements JsonNumber {
         private final long num;
         private BigDecimal bigDecimal;  // assigning it lazily on demand
 
-        JsonLongNumber(long num) {
+        JsonLongNumber(long num, int bigIntegerScaleLimit) {
+            super(bigIntegerScaleLimit);
             this.num = num;
         }
 
@@ -181,7 +198,8 @@ abstract class JsonNumberImpl implements JsonNumber {
     private static final class JsonBigDecimalNumber extends JsonNumberImpl {
         private final BigDecimal bigDecimal;
 
-        JsonBigDecimalNumber(BigDecimal value) {
+        JsonBigDecimalNumber(BigDecimal value, int bigIntegerScaleLimit) {
+            super(bigIntegerScaleLimit);
             this.bigDecimal = value;
         }
 
@@ -224,12 +242,26 @@ abstract class JsonNumberImpl implements JsonNumber {
 
     @Override
     public BigInteger bigIntegerValue() {
-        return bigDecimalValue().toBigInteger();
+        BigDecimal bd = bigDecimalValue();
+        if (bd.scale() <= bigIntegerScaleLimit) {
+            return bd.toBigInteger();
+        }
+        throw new UnsupportedOperationException(
+                String.format(
+                        "Scale value %d of this BigInteger exceeded maximal allowed value of %d",
+                        bd.scale(), bigIntegerScaleLimit));
     }
 
     @Override
     public BigInteger bigIntegerValueExact() {
-        return bigDecimalValue().toBigIntegerExact();
+        BigDecimal bd = bigDecimalValue();
+        if (bd.scale() <= bigIntegerScaleLimit) {
+            return bd.toBigIntegerExact();
+        }
+        throw new UnsupportedOperationException(
+                String.format(
+                        "Scale value %d of this BigInteger exceeded maximal allowed value of %d",
+                        bd.scale(), bigIntegerScaleLimit));
     }
 
     @Override
@@ -257,4 +289,3 @@ abstract class JsonNumberImpl implements JsonNumber {
     }
 
 }
-

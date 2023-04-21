@@ -37,10 +37,11 @@
  * only if the new code is made subject to such option by the copyright
  * holder.
  */
+// Portions Copyright 2024 Payara Foundation and/or its affiliates
+// Payara Foundation and/or its affiliates elects to include this software in this distribution under the GPL Version 2 license
 
 package org.glassfish.json;
 
-import org.glassfish.json.api.BufferPool;
 
 import javax.json.JsonArray;
 import javax.json.JsonObject;
@@ -49,33 +50,32 @@ import javax.json.stream.JsonParser;
 import java.io.InputStream;
 import java.io.Reader;
 import java.nio.charset.Charset;
-import java.util.Collections;
 import java.util.Map;
 
 /**
  * @author Jitendra Kotamraju
  */
 class JsonParserFactoryImpl implements JsonParserFactory {
-    private final Map<String, ?> config = Collections.emptyMap();
-    private final BufferPool bufferPool;
 
-    JsonParserFactoryImpl(BufferPool bufferPool) {
-        this.bufferPool = bufferPool;
+    private final JsonContext jsonContext;
+
+    JsonParserFactoryImpl(JsonContext jsonContext) {
+        this.jsonContext = jsonContext;
     }
 
     @Override
     public JsonParser createParser(Reader reader) {
-        return new JsonParserImpl(reader, bufferPool);
+        return new JsonParserImpl(reader, jsonContext);
     }
 
     @Override
     public JsonParser createParser(InputStream in) {
-        return new JsonParserImpl(in, bufferPool);
+        return new JsonParserImpl(in, jsonContext);
     }
 
     @Override
     public JsonParser createParser(InputStream in, Charset charset) {
-        return new JsonParserImpl(in, charset, bufferPool);
+        return new JsonParserImpl(in, charset, jsonContext);
     }
 
     @Override
@@ -85,7 +85,7 @@ class JsonParserFactoryImpl implements JsonParserFactory {
 
     @Override
     public Map<String, ?> getConfigInUse() {
-        return config;
+        return jsonContext.config();
     }
 
     @Override

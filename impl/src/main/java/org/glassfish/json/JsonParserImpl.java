@@ -37,6 +37,8 @@
  * only if the new code is made subject to such option by the copyright
  * holder.
  */
+// Portions Copyright 2024 Payara Foundation and/or its affiliates
+// Payara Foundation and/or its affiliates elects to include this software in this distribution under the GPL Version 2 license
 
 package org.glassfish.json;
 
@@ -50,7 +52,6 @@ import java.nio.charset.Charset;
 import java.util.*;
 
 import org.glassfish.json.JsonTokenizer.JsonToken;
-import org.glassfish.json.api.BufferPool;
 
 /**
  * JSON parser implementation. NoneContext, ArrayContext, ObjectContext is used
@@ -67,19 +68,24 @@ public class JsonParserImpl implements JsonParser {
     private final StateIterator stateIterator;
     private final JsonTokenizer tokenizer;
 
-    public JsonParserImpl(Reader reader, BufferPool bufferPool) {
-        tokenizer = new JsonTokenizer(reader, bufferPool);
+    private final JsonContext jsonContext;
+
+    public JsonParserImpl(Reader reader, JsonContext jsonContext) {
+        this.jsonContext = jsonContext;
+        this.tokenizer = new JsonTokenizer(reader, jsonContext);
         stateIterator = new StateIterator();
     }
 
-    public JsonParserImpl(InputStream in, BufferPool bufferPool) {
+    public JsonParserImpl(InputStream in, JsonContext jsonContext) {
+        this.jsonContext = jsonContext;
         UnicodeDetectingInputStream uin = new UnicodeDetectingInputStream(in);
-        tokenizer = new JsonTokenizer(new InputStreamReader(uin, uin.getCharset()), bufferPool);
+        this.tokenizer = new JsonTokenizer(new InputStreamReader(uin, uin.getCharset()), jsonContext);
         stateIterator = new StateIterator();
     }
 
-    public JsonParserImpl(InputStream in, Charset encoding, BufferPool bufferPool) {
-        tokenizer = new JsonTokenizer(new InputStreamReader(in, encoding), bufferPool);
+    public JsonParserImpl(InputStream in, Charset encoding, JsonContext jsonContext) {
+        this.jsonContext = jsonContext;
+        this.tokenizer = new JsonTokenizer(new InputStreamReader(in, encoding), jsonContext);
         stateIterator = new StateIterator();
     }
 
@@ -114,6 +120,10 @@ public class JsonParserImpl implements JsonParser {
         return tokenizer.isDefinitelyInt();
     }
 
+    boolean isDefinitelyLong() {
+        return tokenizer.isDefinitelyLong();
+    }
+
     @Override
     public long getLong() {
         if (currentEvent != Event.VALUE_NUMBER) {
@@ -130,6 +140,75 @@ public class JsonParserImpl implements JsonParser {
                     JsonMessages.PARSER_GETBIGDECIMAL_ERR(currentEvent));
         }
         return tokenizer.getBigDecimal();
+    }
+
+    public JsonArray getArray() {
+        if (currentEvent != Event.START_ARRAY) {
+            throw new IllegalStateException(
+                    JsonMessages.PARSER_GETARRAY_ERR(currentEvent));
+        }
+        return getArray(new JsonArrayBuilderImpl(jsonContext));
+    }
+
+    public JsonObject getObject() {
+        if (currentEvent != Event.START_OBJECT) {
+            throw new IllegalStateException(
+                    JsonMessages.PARSER_GETOBJECT_ERR(currentEvent));
+        }
+        return getObject(new JsonObjectBuilderImpl(jsonContext));
+    }
+
+    public JsonValue getValue() {
+        switch (currentEvent) {
+            case START_ARRAY:
+                return getArray(new JsonArrayBuilderImpl(jsonContext));
+            case START_OBJECT:
+                return getObject(new JsonObjectBuilderImpl(jsonContext));
+            case KEY_NAME:
+            case VALUE_STRING:
+                return new JsonStringImpl(getString());
+            case VALUE_NUMBER:
+                if (isDefinitelyInt()) {
+                    return JsonNumberImpl.getJsonNumber(getInt(), jsonContext.bigIntegerScaleLimit());
+                } else if (isDefinitelyLong()) {
+                    return JsonNumberImpl.getJsonNumber(getLong(), jsonContext.bigIntegerScaleLimit());
+                }
+                return JsonNumberImpl.getJsonNumber(getBigDecimal(), jsonContext.bigIntegerScaleLimit());
+            case VALUE_TRUE:
+                return JsonValue.TRUE;
+            case VALUE_FALSE:
+                return JsonValue.FALSE;
+            case VALUE_NULL:
+                return JsonValue.NULL;
+            case END_ARRAY:
+            case END_OBJECT:
+            default:
+                throw new IllegalStateException(JsonMessages.PARSER_GETVALUE_ERR(currentEvent));
+        }
+    }
+
+    private JsonArray getArray(JsonArrayBuilder builder) {
+        while(hasNext()) {
+            JsonParser.Event e = next();
+            if (e == JsonParser.Event.END_ARRAY) {
+                return builder.build();
+            }
+            builder.add(getValue());
+        }
+        throw parsingException(JsonToken.EOF, "[CURLYOPEN, SQUAREOPEN, STRING, NUMBER, TRUE, FALSE, NULL, SQUARECLOSE]");
+    }
+
+    private JsonObject getObject(JsonObjectBuilder builder) {
+        while(hasNext()) {
+            JsonParser.Event e = next();
+            if (e == JsonParser.Event.END_OBJECT) {
+                return builder.build();
+            }
+            String key = getString();
+            next();
+            builder.add(key, getValue());
+        }
+        throw parsingException(JsonToken.EOF, "[STRING, CURLYCLOSE]");
     }
 
     @Override
@@ -210,7 +289,7 @@ public class JsonParserImpl implements JsonParser {
         }
     }
 
-    private abstract class Context {
+    private abstract static class Context {
         Context next;
         abstract Event getNextEvent();
     }

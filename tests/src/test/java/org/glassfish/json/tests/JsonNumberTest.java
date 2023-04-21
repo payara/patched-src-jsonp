@@ -37,6 +37,8 @@
  * only if the new code is made subject to such option by the copyright
  * holder.
  */
+// Portions Copyright 2024 Payara Foundation and/or its affiliates
+// Payara Foundation and/or its affiliates elects to include this software in this distribution under the GPL Version 2 license
 
 package org.glassfish.json.tests;
 
@@ -47,6 +49,9 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.RoundingMode;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author Jitendra Kotamraju
@@ -230,5 +235,55 @@ public class JsonNumberTest extends TestCase {
         }
     }
 
+    // Test default BigInteger scale value limit using value bellow limit.
+    // Call shall return value.
+    public void testDefaultBigIntegerScaleBellowLimit() {
+        BigDecimal value = new BigDecimal("3.1415926535897932384626433");
+        JsonArray array = Json.createArrayBuilder().add(value).build();
+        BigInteger integer = array.getJsonNumber(0).bigIntegerValue();
+        System.out.println(integer);
+    }
 
+    // Test default BigInteger scale value limit using value above limit.
+    // Call shall throw specific UnsupportedOperationException exception.
+    public void testDefaultBigIntegerScaleAboveLimit() {
+        BigDecimal value = new BigDecimal("3.1415926535897932384626433")
+                .setScale(100001, RoundingMode.HALF_UP);
+        try {
+            JsonArray array = Json.createArrayBuilder().add(value).build();
+            array.getJsonNumber(0).bigIntegerValue();
+            fail("No exception was thrown from bigIntegerValue with scale over limit");
+        } catch (UnsupportedOperationException e) {
+            // UnsupportedOperationException is expected to be thrown
+            assertEquals(
+                    "Scale value 100001 of this BigInteger exceeded maximal allowed value of 100000",
+                    e.getMessage());
+        }
+    }
+
+    // Test BigInteger scale value limit set from config Map using value above limit.
+    // Call shall throw specific UnsupportedOperationException exception.
+    // Config Map limit is stored in target JsonObject and shall be present for later value manipulation.
+    // Default value is 100000 and config Map property lowered it to 50000 so value with scale 50001
+    // test shall fail with exception message matching modified limits.
+    public void testConfigBigIntegerScaleAboveLimit() {
+        BigDecimal value = new BigDecimal("3.1415926535897932384626433")
+                .setScale(50001, RoundingMode.HALF_UP);
+        Map<String, String> config = new HashMap<String, String>();
+        config.put("org.eclipse.parsson.maxBigIntegerScale", "50000");
+
+        try {
+            JsonObject jsonObject = Json.createBuilderFactory(config)
+                    .createObjectBuilder()
+                    .add("bigDecimal", value)
+                    .build();
+            jsonObject.getJsonNumber("bigDecimal").bigIntegerValue();
+            fail("No exception was thrown from bigIntegerValue with scale over limit");
+        } catch (UnsupportedOperationException e) {
+            // UnsupportedOperationException is expected to be thrown
+            assertEquals(
+                    "Scale value 50001 of this BigInteger exceeded maximal allowed value of 50000",
+                    e.getMessage());
+        }
+    }
 }

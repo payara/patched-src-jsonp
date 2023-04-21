@@ -37,47 +37,46 @@
  * only if the new code is made subject to such option by the copyright
  * holder.
  */
+// Portions Copyright 2024 Payara Foundation and/or its affiliates
+// Payara Foundation and/or its affiliates elects to include this software in this distribution under the GPL Version 2 license
 
 package org.glassfish.json;
-
-import org.glassfish.json.api.BufferPool;
 
 import javax.json.JsonReader;
 import javax.json.JsonReaderFactory;
 import java.io.InputStream;
 import java.io.Reader;
 import java.nio.charset.Charset;
-import java.util.Collections;
 import java.util.Map;
 
 /**
  * @author Jitendra Kotamraju
  */
 class JsonReaderFactoryImpl implements JsonReaderFactory {
-    private final Map<String, ?> config = Collections.emptyMap();
-    private final BufferPool bufferPool;
 
-    JsonReaderFactoryImpl(BufferPool bufferPool) {
-        this.bufferPool = bufferPool;
+    private final JsonContext jsonContext;
+
+    JsonReaderFactoryImpl(JsonContext jsonContext) {
+        this.jsonContext = jsonContext;
     }
 
     @Override
     public JsonReader createReader(Reader reader) {
-        return new JsonReaderImpl(reader, bufferPool);
+        return new JsonReaderImpl(reader, jsonContext);
     }
 
     @Override
     public JsonReader createReader(InputStream in) {
-        return new JsonReaderImpl(in, bufferPool);
+        return new JsonReaderImpl(in, jsonContext);
     }
 
     @Override
     public JsonReader createReader(InputStream in, Charset charset) {
-        return new JsonReaderImpl(in, charset, bufferPool);
+        return new JsonReaderImpl(in, charset, jsonContext);
     }
 
     @Override
     public Map<String, ?> getConfigInUse() {
-        return config;
+        return jsonContext.config();
     }
 }

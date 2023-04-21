@@ -37,17 +37,28 @@
  * only if the new code is made subject to such option by the copyright
  * holder.
  */
+// Portions Copyright 2024 Payara Foundation and/or its affiliates
+// Payara Foundation and/or its affiliates elects to include this software in this distribution under the GPL Version 2 license
 
 package org.glassfish.json;
 
-import org.glassfish.json.api.BufferPool;
-
-import javax.json.JsonArrayBuilder;
-import javax.json.*;
 import java.io.StringWriter;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.*;
+import java.util.AbstractMap;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
+
+import javax.json.JsonArray;
+import javax.json.JsonArrayBuilder;
+import javax.json.JsonNumber;
+import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
+import javax.json.JsonString;
+import javax.json.JsonValue;
+import javax.json.JsonWriter;
 
 /**
  * JsonObjectBuilder impl
@@ -55,11 +66,12 @@ import java.util.*;
  * @author Jitendra Kotamraju
  */
 class JsonObjectBuilderImpl implements JsonObjectBuilder {
-    private Map<String, JsonValue> valueMap;
-    private final BufferPool bufferPool;
 
-    JsonObjectBuilderImpl(BufferPool bufferPool) {
-        this.bufferPool = bufferPool;
+    protected Map<String, JsonValue> valueMap;
+    private final JsonContext jsonContext;
+
+    JsonObjectBuilderImpl(JsonContext jsonContext) {
+        this.jsonContext = jsonContext;
     }
 
     public JsonObjectBuilder add(String name, JsonValue value) {
@@ -79,32 +91,32 @@ class JsonObjectBuilderImpl implements JsonObjectBuilder {
     public JsonObjectBuilder add(String name, BigInteger value) {
         validateName(name);
         validateValue(value);
-        putValueMap(name, JsonNumberImpl.getJsonNumber(value));
+        putValueMap(name, JsonNumberImpl.getJsonNumber(value, jsonContext.bigIntegerScaleLimit()));
         return this;
     }
 
     public JsonObjectBuilder add(String name, BigDecimal value) {
         validateName(name);
         validateValue(value);
-        putValueMap(name, JsonNumberImpl.getJsonNumber(value));
+        putValueMap(name, JsonNumberImpl.getJsonNumber(value, jsonContext.bigIntegerScaleLimit()));
         return this;
     }
 
     public JsonObjectBuilder add(String name, int value) {
         validateName(name);
-        putValueMap(name, JsonNumberImpl.getJsonNumber(value));
+        putValueMap(name, JsonNumberImpl.getJsonNumber(value, jsonContext.bigIntegerScaleLimit()));
         return this;
     }
 
     public JsonObjectBuilder add(String name, long value) {
         validateName(name);
-        putValueMap(name, JsonNumberImpl.getJsonNumber(value));
+        putValueMap(name, JsonNumberImpl.getJsonNumber(value, jsonContext.bigIntegerScaleLimit()));
         return this;
     }
 
     public JsonObjectBuilder add(String name, double value) {
         validateName(name);
-        putValueMap(name, JsonNumberImpl.getJsonNumber(value));
+        putValueMap(name, JsonNumberImpl.getJsonNumber(value, jsonContext.bigIntegerScaleLimit()));
         return this;
     }
 
@@ -143,7 +155,7 @@ class JsonObjectBuilderImpl implements JsonObjectBuilder {
                 ? Collections.<String, JsonValue>emptyMap()
                 : Collections.unmodifiableMap(valueMap);
         valueMap = null;
-        return new JsonObjectImpl(snapshot, bufferPool);
+        return new JsonObjectImpl(snapshot, jsonContext);
     }
 
     private void putValueMap(String name, JsonValue value) {
@@ -167,11 +179,11 @@ class JsonObjectBuilderImpl implements JsonObjectBuilder {
 
     private static final class JsonObjectImpl extends AbstractMap<String, JsonValue> implements JsonObject {
         private final Map<String, JsonValue> valueMap;      // unmodifiable
-        private final BufferPool bufferPool;
+        private final JsonContext jsonContext;
 
-        JsonObjectImpl(Map<String, JsonValue> valueMap, BufferPool bufferPool) {
+        JsonObjectImpl(Map<String, JsonValue> valueMap, JsonContext jsonContext) {
             this.valueMap = valueMap;
-            this.bufferPool = bufferPool;
+            this.jsonContext = jsonContext;
         }
 
         @Override
@@ -263,7 +275,7 @@ class JsonObjectBuilderImpl implements JsonObjectBuilder {
         @Override
         public String toString() {
             StringWriter sw = new StringWriter();
-            JsonWriter jw = new JsonWriterImpl(sw, bufferPool);
+            JsonWriter jw = new JsonWriterImpl(sw, jsonContext);
             jw.write(this);
             jw.close();
             return sw.toString();

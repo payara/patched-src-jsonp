@@ -37,10 +37,10 @@
  * only if the new code is made subject to such option by the copyright
  * holder.
  */
+// Portions Copyright 2024 Payara Foundation and/or its affiliates
+// Payara Foundation and/or its affiliates elects to include this software in this distribution under the GPL Version 2 license
 
 package org.glassfish.json;
-
-import org.glassfish.json.api.BufferPool;
 
 import javax.json.*;
 import java.io.FilterOutputStream;
@@ -62,33 +62,24 @@ class JsonWriterImpl implements JsonWriter {
     private boolean writeDone;
     private final NoFlushOutputStream os;
 
-    JsonWriterImpl(Writer writer, BufferPool bufferPool) {
-        this(writer, false, bufferPool);
+    JsonWriterImpl(Writer writer, JsonContext jsonContext) {
+        this.generator = jsonContext.prettyPrinting()
+                ? new JsonPrettyGeneratorImpl(writer, jsonContext)
+                : new JsonGeneratorImpl(writer, jsonContext);
+        this.os = null;
     }
 
-    JsonWriterImpl(Writer writer, boolean prettyPrinting, BufferPool bufferPool) {
-        generator = prettyPrinting
-                ? new JsonPrettyGeneratorImpl(writer, bufferPool)
-                : new JsonGeneratorImpl(writer, bufferPool);
-        os = null;
+    JsonWriterImpl(OutputStream out, JsonContext jsonContext) {
+        this(out, UTF_8, jsonContext);
     }
 
-    JsonWriterImpl(OutputStream out, BufferPool bufferPool) {
-        this(out, UTF_8, false, bufferPool);
-    }
-
-    JsonWriterImpl(OutputStream out, boolean prettyPrinting, BufferPool bufferPool) {
-        this(out, UTF_8, prettyPrinting, bufferPool);
-    }
-
-    JsonWriterImpl(OutputStream out, Charset charset,
-                   boolean prettyPrinting, BufferPool bufferPool) {
+    JsonWriterImpl(OutputStream out, Charset charset, JsonContext jsonContext) {
         // Decorating the given stream, so that buffered contents can be
         // written without actually flushing the stream.
         this.os = new NoFlushOutputStream(out);
-        generator = prettyPrinting
-                ? new JsonPrettyGeneratorImpl(os, charset, bufferPool)
-                : new JsonGeneratorImpl(os, charset, bufferPool);
+        this.generator = jsonContext.prettyPrinting()
+                ? new JsonPrettyGeneratorImpl(os, charset, jsonContext)
+                : new JsonGeneratorImpl(os, charset, jsonContext);
     }
 
     @Override

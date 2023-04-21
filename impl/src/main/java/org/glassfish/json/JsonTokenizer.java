@@ -37,6 +37,8 @@
  * only if the new code is made subject to such option by the copyright
  * holder.
  */
+// Portions Copyright 2024 Payara Foundation and/or its affiliates
+// Payara Foundation and/or its affiliates elects to include this software in this distribution under the GPL Version 2 license
 
 package org.glassfish.json;
 
@@ -143,9 +145,9 @@ final class JsonTokenizer implements Closeable {
         }
     }
 
-    JsonTokenizer(Reader reader, BufferPool bufferPool) {
+    JsonTokenizer(Reader reader, JsonContext jsonContext) {
         this.reader = reader;
-        this.bufferPool = bufferPool;
+        this.bufferPool = jsonContext.bufferPool();
         buf = bufferPool.take();
     }
 
@@ -515,6 +517,13 @@ final class JsonTokenizer implements Closeable {
     boolean isDefinitelyInt() {
         int storeLen = storeEnd-storeBegin;
         return !fracOrExp && (storeLen <= 9 || (minus && storeLen == 10));
+    }
+
+    // returns true for common long values (1-18 digits).
+    // So there are cases it will return false even though the number is long
+    boolean isDefinitelyLong() {
+        int storeLen = storeEnd-storeBegin;
+        return !fracOrExp && (storeLen <= 18 || (minus && storeLen <= 19));
     }
 
     boolean isIntegral() {

@@ -37,10 +37,10 @@
  * only if the new code is made subject to such option by the copyright
  * holder.
  */
+// Portions Copyright 2024 Payara Foundation and/or its affiliates
+// Payara Foundation and/or its affiliates elects to include this software in this distribution under the GPL Version 2 license
 
 package org.glassfish.json;
-
-import org.glassfish.json.api.BufferPool;
 
 import javax.json.*;
 import java.io.StringWriter;
@@ -57,13 +57,15 @@ import java.util.List;
  * @author Jitendra Kotamraju
  */
 class JsonArrayBuilderImpl implements JsonArrayBuilder {
-    private ArrayList<JsonValue> valueList;
-    private final BufferPool bufferPool;
 
-    JsonArrayBuilderImpl(BufferPool bufferPool) {
-        this.bufferPool = bufferPool;
+    private ArrayList<JsonValue> valueList;
+    private final JsonContext jsonContext;
+
+    JsonArrayBuilderImpl(JsonContext jsonContext) {
+        this.jsonContext = jsonContext;
     }
 
+    @Override
     public JsonArrayBuilder add(JsonValue value) {
         validateValue(value);
         addValueList(value);
@@ -78,28 +80,28 @@ class JsonArrayBuilderImpl implements JsonArrayBuilder {
 
     public JsonArrayBuilder add(BigDecimal value) {
         validateValue(value);
-        addValueList(JsonNumberImpl.getJsonNumber(value));
+        addValueList(JsonNumberImpl.getJsonNumber(value, jsonContext.bigIntegerScaleLimit()));
         return this;
     }
 
     public JsonArrayBuilder add(BigInteger value) {
         validateValue(value);
-        addValueList(JsonNumberImpl.getJsonNumber(value));
+        addValueList(JsonNumberImpl.getJsonNumber(value, jsonContext.bigIntegerScaleLimit()));
         return this;
     }
 
     public JsonArrayBuilder add(int value) {
-        addValueList(JsonNumberImpl.getJsonNumber(value));
+        addValueList(JsonNumberImpl.getJsonNumber(value, jsonContext.bigIntegerScaleLimit()));
         return this;
     }
 
     public JsonArrayBuilder add(long value) {
-        addValueList(JsonNumberImpl.getJsonNumber(value));
+        addValueList(JsonNumberImpl.getJsonNumber(value, jsonContext.bigIntegerScaleLimit()));
         return this;
     }
 
     public JsonArrayBuilder add(double value) {
-        addValueList(JsonNumberImpl.getJsonNumber(value));
+        addValueList(JsonNumberImpl.getJsonNumber(value, jsonContext.bigIntegerScaleLimit()));
         return this;
     }
 
@@ -139,7 +141,7 @@ class JsonArrayBuilderImpl implements JsonArrayBuilder {
             snapshot = Collections.unmodifiableList(valueList);
         }
         valueList = null;
-        return new JsonArrayImpl(snapshot, bufferPool);
+        return new JsonArrayImpl(snapshot, jsonContext);
     }
 
     private void addValueList(JsonValue value) {
@@ -157,11 +159,11 @@ class JsonArrayBuilderImpl implements JsonArrayBuilder {
 
     private static final class JsonArrayImpl extends AbstractList<JsonValue> implements JsonArray {
         private final List<JsonValue> valueList;    // Unmodifiable
-        private final BufferPool bufferPool;
+        private final JsonContext jsonContext;
 
-        JsonArrayImpl(List<JsonValue> valueList, BufferPool bufferPool) {
+        JsonArrayImpl(List<JsonValue> valueList, JsonContext jsonContext) {
             this.valueList = valueList;
-            this.bufferPool = bufferPool;
+            this.jsonContext = jsonContext;
         }
 
         @Override
@@ -262,7 +264,7 @@ class JsonArrayBuilderImpl implements JsonArrayBuilder {
         @Override
         public String toString() {
             StringWriter sw = new StringWriter();
-            JsonWriter jw = new JsonWriterImpl(sw, bufferPool);
+            JsonWriter jw = new JsonWriterImpl(sw, jsonContext);
             jw.write(this);
             jw.close();
             return sw.toString();

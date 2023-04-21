@@ -37,6 +37,8 @@
  * only if the new code is made subject to such option by the copyright
  * holder.
  */
+// Portions Copyright 2024 Payara Foundation and/or its affiliates
+// Payara Foundation and/or its affiliates elects to include this software in this distribution under the GPL Version 2 license
 
 package org.glassfish.json;
 
@@ -54,6 +56,11 @@ import java.util.ResourceBundle;
 final class JsonMessages {
     private static final ResourceBundle BUNDLE =
             ResourceBundle.getBundle("org.glassfish.json.messages");
+
+    // global/shared messages
+    static String INTERNAL_ERROR() {
+        return localize("internal.error");
+    }
 
     // tokenizer messages
     static String TOKENIZER_UNEXPECTED_CHAR(int unexpected, JsonLocation location) {
@@ -88,6 +95,18 @@ final class JsonMessages {
 
     static String PARSER_GETBIGDECIMAL_ERR(JsonParser.Event event) {
         return localize("parser.getBigDecimal.err", event);
+    }
+
+    static String PARSER_GETARRAY_ERR(JsonParser.Event event) {
+        return localize("parser.getArray.err", event);
+    }
+
+    static String PARSER_GETOBJECT_ERR(JsonParser.Event event) {
+        return localize("parser.getObject.err", event);
+    }
+
+    static String PARSER_GETVALUE_ERR(JsonParser.Event event) {
+        return localize("parser.getValue.err", event);
     }
 
     static String PARSER_EXPECTED_EOF(JsonTokenizer.JsonToken token) {
