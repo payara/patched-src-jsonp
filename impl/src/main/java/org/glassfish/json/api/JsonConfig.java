@@ -25,6 +25,13 @@ public interface JsonConfig {
      * and {@link javax.json.JsonNumber#bigIntegerValueExact()} implemented methods.
      * Default value is set to {@code 100000}.
      */
-    String MAX_BIGINT_SCALE = "org.eclipse.parsson.maxBigIntegerScale";
+    String MAX_BIGINTEGER_SCALE = "org.eclipse.parsson.maxBigIntegerScale";
+
+    /**
+     * Configuration property to limit maximum value of BigDecimal length when being parsed.
+     * This property limits maximum number of characters of BigDecimal source being parsed.
+     * Default value is set to {@code 1100}.
+     */
+    String MAX_BIGDECIMAL_LEN = "org.eclipse.parsson.maxBigDecimalLength";
 
 }

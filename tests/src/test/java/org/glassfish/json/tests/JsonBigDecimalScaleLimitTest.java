@@ -24,6 +24,7 @@ import javax.json.Json;
 import javax.json.JsonArray;
 
 import junit.framework.TestCase;
+import org.glassfish.json.api.JsonConfig;
 
 /**
  * Test maxBigIntegerScale limit set from System property.
@@ -36,12 +37,12 @@ public class JsonBigDecimalScaleLimitTest extends TestCase {
 
     @Override
     protected void setUp() {
-        System.setProperty("org.eclipse.parsson.maxBigIntegerScale", "50000");
+        System.setProperty(JsonConfig.MAX_BIGINTEGER_SCALE, "50000");
     }
 
     @Override
     protected void tearDown() {
-        System.clearProperty("org.eclipse.parsson.maxBigIntegerScale");
+        System.clearProperty(JsonConfig.MAX_BIGINTEGER_SCALE);
     }
 
     // Test BigInteger scale value limit set from system property using value bellow limit.
@@ -49,8 +50,7 @@ public class JsonBigDecimalScaleLimitTest extends TestCase {
     public void testSystemPropertyBigIntegerScaleBellowLimit() {
         BigDecimal value = new BigDecimal("3.1415926535897932384626433");
         JsonArray array = Json.createArrayBuilder().add(value).build();
-        BigInteger integer = array.getJsonNumber(0).bigIntegerValue();
-        System.out.println(integer);
+        array.getJsonNumber(0).bigIntegerValue();
     }
 
     // Test BigInteger scale value limit set from system property using value above limit.
