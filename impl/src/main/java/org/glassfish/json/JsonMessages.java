@@ -122,6 +122,10 @@ final class JsonMessages {
     }
 
 
+    static String PARSER_INPUT_NESTED_TOO_DEEP(int limit) {
+        return localize("parser.input.nested.too.deep", limit);
+    }
+
     // generator messages
     static String GENERATOR_FLUSH_IO_ERR() {
         return localize("generator.flush.io.err");
@@ -172,6 +176,10 @@ final class JsonMessages {
         return localize("reader.expected.object.got.array");
     }
 
+    // JSON number messages
+    static String NUMBER_SCALE_LIMIT_EXCEPTION(int value, int limit) {
+        return localize("number.scale.limit.exception", value, limit);
+    }
 
     // obj builder messages
     static String OBJBUILDER_NAME_NULL() {

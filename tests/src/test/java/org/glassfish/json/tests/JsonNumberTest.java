@@ -51,6 +51,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
 import java.util.HashMap;
+import java.text.MessageFormat;
 import java.util.Map;
 
 import org.glassfish.json.api.JsonConfig;
@@ -82,6 +83,9 @@ public class JsonNumberTest extends TestCase {
 
     // π as JsonNumber with 1101 source characters
     private static final String Π_1101 = Π_1100 + "5";
+
+    // Default maximum value of BigInteger scale value limit from JsonContext
+    private static final int DEFAULT_MAX_BIGINTEGER_SCALE = 100000;
 
     public JsonNumberTest(String testName) {
         super(testName);
@@ -269,7 +273,7 @@ public class JsonNumberTest extends TestCase {
         array.getJsonNumber(0).bigIntegerValue();
     }
 
-    // Test default BigInteger scale value limit using value above limit.
+    // Test default BigInteger scale value limit using positive value above limit.
     // Call shall throw specific UnsupportedOperationException exception.
     public void testDefaultBigIntegerScaleAboveLimit() {
         BigDecimal value = new BigDecimal("3.1415926535897932384626433")
@@ -280,9 +284,24 @@ public class JsonNumberTest extends TestCase {
             fail("No exception was thrown from bigIntegerValue with scale over limit");
         } catch (UnsupportedOperationException e) {
             // UnsupportedOperationException is expected to be thrown
-            assertEquals(
-                    "Scale value 100001 of this BigInteger exceeded maximal allowed value of 100000",
-                    e.getMessage());
+            assertExceptionMessageContainsNumber(e, 100001);
+            assertExceptionMessageContainsNumber(e, DEFAULT_MAX_BIGINTEGER_SCALE);
+        }
+    }
+
+    // Test default BigInteger scale value limit using negative value above limit.
+    // Call shall throw specific UnsupportedOperationException exception.
+    public void testDefaultBigIntegerNegScaleAboveLimit() {
+        BigDecimal value = new BigDecimal("3.1415926535897932384626433")
+                .setScale(-100001, RoundingMode.HALF_UP);
+        try {
+            JsonArray array = Json.createArrayBuilder().add(value).build();
+            array.getJsonNumber(0).bigIntegerValue();
+            fail("No exception was thrown from bigIntegerValue with scale over limit");
+        } catch (UnsupportedOperationException e) {
+            // UnsupportedOperationException is expected to be thrown
+            assertExceptionMessageContainsNumber(e, -100001);
+            assertExceptionMessageContainsNumber(e, DEFAULT_MAX_BIGINTEGER_SCALE);
         }
     }
 
@@ -305,9 +324,32 @@ public class JsonNumberTest extends TestCase {
             fail("No exception was thrown from bigIntegerValue with scale over limit");
         } catch (UnsupportedOperationException e) {
             // UnsupportedOperationException is expected to be thrown
-            assertEquals(
-                    "Scale value 50001 of this BigInteger exceeded maximal allowed value of 50000",
-                    e.getMessage());
+            assertExceptionMessageContainsNumber(e, 50001);
+            assertExceptionMessageContainsNumber(e, 50000);
+        }
+    }
+
+    // Test BigInteger scale value limit set from config Map using value above limit.
+    // Call shall throw specific UnsupportedOperationException exception.
+    // Config Map limit is stored in target JsonObject and shall be present for later value manipulation.
+    // Default value is 100000 and config Map property lowered it to 50000 so value with scale -50001
+    // test shall fail with exception message matching modified limits.
+    public void testConfigBigIntegerNegScaleAboveLimit() {
+        BigDecimal value = new BigDecimal("3.1415926535897932384626433")
+                .setScale(-50001, RoundingMode.HALF_UP);
+        Map<String, String> config = new HashMap<String, String>();
+        config.put(JsonConfig.MAX_BIGINTEGER_SCALE, "50000");
+        try {
+            JsonObject jsonObject = Json.createBuilderFactory(config)
+                    .createObjectBuilder()
+                    .add("bigDecimal", value)
+                    .build();
+            jsonObject.getJsonNumber("bigDecimal").bigIntegerValue();
+            fail("No exception was thrown from bigIntegerValue with scale over limit");
+        } catch (UnsupportedOperationException e) {
+            // UnsupportedOperationException is expected to be thrown
+            assertExceptionMessageContainsNumber(e, -50001);
+            assertExceptionMessageContainsNumber(e, 50000);
         }
     }
 
@@ -368,4 +410,12 @@ public class JsonNumberTest extends TestCase {
                     e.getMessage());
         }
     }
+
+    static void assertExceptionMessageContainsNumber(Exception e, int number) {
+        // Format the number as being written to message from messages bundle
+        String numberString = MessageFormat.format("{0}", number);
+        assertTrue("Substring \"" + numberString + "\" was not found in \"" + e.getMessage() + "\"",
+                   e.getMessage().contains(numberString));
+    }
+
 }
