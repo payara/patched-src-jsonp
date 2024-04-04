@@ -37,10 +37,10 @@
  * only if the new code is made subject to such option by the copyright
  * holder.
  */
+// Portions Copyright 2024 Payara Foundation and/or its affiliates
+// Payara Foundation and/or its affiliates elects to include this software in this distribution under the GPL Version 2 license
 
 package org.glassfish.json;
-
-import org.glassfish.json.api.BufferPool;
 
 import javax.json.stream.JsonGenerator;
 import javax.json.stream.JsonGeneratorFactory;
@@ -54,41 +54,36 @@ import java.util.Map;
  */
 class JsonGeneratorFactoryImpl implements JsonGeneratorFactory {
 
-    private final boolean prettyPrinting;
-    private final Map<String, ?> config;    // unmodifiable map
-    private final BufferPool bufferPool;
+    private final JsonContext jsonContext;
 
-    JsonGeneratorFactoryImpl(Map<String, ?> config, boolean prettyPrinting,
-            BufferPool bufferPool) {
-        this.config = config;
-        this.prettyPrinting = prettyPrinting;
-        this.bufferPool = bufferPool;
+    JsonGeneratorFactoryImpl(JsonContext jsonContext) {
+        this.jsonContext = jsonContext;
     }
 
     @Override
     public JsonGenerator createGenerator(Writer writer) {
-        return prettyPrinting
-                ? new JsonPrettyGeneratorImpl(writer, bufferPool)
-                : new JsonGeneratorImpl(writer, bufferPool);
+        return jsonContext.prettyPrinting()
+                ? new JsonPrettyGeneratorImpl(writer, jsonContext)
+                : new JsonGeneratorImpl(writer, jsonContext);
     }
 
     @Override
     public JsonGenerator createGenerator(OutputStream out) {
-        return prettyPrinting
-                ? new JsonPrettyGeneratorImpl(out, bufferPool)
-                : new JsonGeneratorImpl(out, bufferPool);
+        return jsonContext.prettyPrinting()
+                ? new JsonPrettyGeneratorImpl(out, jsonContext)
+                : new JsonGeneratorImpl(out, jsonContext);
     }
 
     @Override
     public JsonGenerator createGenerator(OutputStream out, Charset charset) {
-        return prettyPrinting
-                ? new JsonPrettyGeneratorImpl(out, charset, bufferPool)
-                : new JsonGeneratorImpl(out, charset, bufferPool);
+        return jsonContext.prettyPrinting()
+                ? new JsonPrettyGeneratorImpl(out, charset, jsonContext)
+                : new JsonGeneratorImpl(out, charset, jsonContext);
     }
 
     @Override
     public Map<String, ?> getConfigInUse() {
-        return config;
+        return jsonContext.config();
     }
 
 }

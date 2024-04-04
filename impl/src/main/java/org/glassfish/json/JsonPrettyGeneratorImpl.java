@@ -37,10 +37,10 @@
  * only if the new code is made subject to such option by the copyright
  * holder.
  */
+// Portions Copyright 2024 Payara Foundation and/or its affiliates
+// Payara Foundation and/or its affiliates elects to include this software in this distribution under the GPL Version 2 license
 
 package org.glassfish.json;
-
-import org.glassfish.json.api.BufferPool;
 
 import javax.json.stream.JsonGenerator;
 import java.io.OutputStream;
@@ -51,19 +51,20 @@ import java.nio.charset.Charset;
  * @author Jitendra Kotamraju
  */
 public class JsonPrettyGeneratorImpl extends JsonGeneratorImpl {
+
     private int indentLevel;
     private static final String INDENT = "    ";
 
-    public JsonPrettyGeneratorImpl(Writer writer, BufferPool bufferPool) {
-        super(writer, bufferPool);
+    public JsonPrettyGeneratorImpl(Writer writer, JsonContext jsonContext) {
+        super(writer, jsonContext);
     }
 
-    public JsonPrettyGeneratorImpl(OutputStream out, BufferPool bufferPool) {
-        super(out, bufferPool);
+    public JsonPrettyGeneratorImpl(OutputStream out, JsonContext jsonContext) {
+        super(out, jsonContext);
     }
 
-    public JsonPrettyGeneratorImpl(OutputStream out, Charset encoding, BufferPool bufferPool) {
-        super(out, encoding, bufferPool);
+    public JsonPrettyGeneratorImpl(OutputStream out, Charset encoding, JsonContext jsonContext) {
+        super(out, encoding, jsonContext);
     }
 
     @Override

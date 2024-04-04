@@ -37,6 +37,8 @@
  * only if the new code is made subject to such option by the copyright
  * holder.
  */
+// Portions Copyright 2024 Payara Foundation and/or its affiliates
+// Payara Foundation and/or its affiliates elects to include this software in this distribution under the GPL Version 2 license
 
 package org.glassfish.json;
 
@@ -114,18 +116,18 @@ class JsonGeneratorImpl implements JsonGenerator {
     private final char buf[];     // capacity >= INT_MIN_VALUE_CHARS.length
     private int len = 0;
 
-    JsonGeneratorImpl(Writer writer, BufferPool bufferPool) {
+    JsonGeneratorImpl(Writer writer, JsonContext jsonContext) {
+        this.bufferPool = jsonContext.bufferPool();
         this.writer = writer;
-        this.bufferPool = bufferPool;
-        this.buf = bufferPool.take();
+        this.buf = jsonContext.bufferPool().take();
     }
 
-    JsonGeneratorImpl(OutputStream out, BufferPool bufferPool) {
-        this(out, UTF_8, bufferPool);
+    JsonGeneratorImpl(OutputStream out, JsonContext jsonContext) {
+        this(out, UTF_8, jsonContext);
     }
 
-    JsonGeneratorImpl(OutputStream out, Charset encoding, BufferPool bufferPool) {
-        this(new OutputStreamWriter(out, encoding), bufferPool);
+    JsonGeneratorImpl(OutputStream out, Charset encoding, JsonContext jsonContext) {
+        this(new OutputStreamWriter(out, encoding), jsonContext);
     }
 
     @Override

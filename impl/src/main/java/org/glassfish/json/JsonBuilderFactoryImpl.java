@@ -37,41 +37,40 @@
  * only if the new code is made subject to such option by the copyright
  * holder.
  */
+// Portions Copyright 2024 Payara Foundation and/or its affiliates
+// Payara Foundation and/or its affiliates elects to include this software in this distribution under the GPL Version 2 license
 
 package org.glassfish.json;
-
-import org.glassfish.json.api.BufferPool;
 
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonBuilderFactory;
 import javax.json.JsonObjectBuilder;
-import java.util.Collections;
 import java.util.Map;
 
 /**
  * @author Jitendra Kotamraju
  */
 class JsonBuilderFactoryImpl implements JsonBuilderFactory {
-    private final Map<String, ?> config;
-    private final BufferPool bufferPool;
 
-    JsonBuilderFactoryImpl(BufferPool bufferPool) {
-        this.config = Collections.emptyMap();
-        this.bufferPool = bufferPool;
+    private final JsonContext jsonContext;
+
+    JsonBuilderFactoryImpl(JsonContext jsonContext) {
+        this.jsonContext = jsonContext;
     }
 
     @Override
     public JsonObjectBuilder createObjectBuilder() {
-        return new JsonObjectBuilderImpl(bufferPool);
+        return new JsonObjectBuilderImpl(jsonContext);
     }
 
     @Override
     public JsonArrayBuilder createArrayBuilder() {
-        return new JsonArrayBuilderImpl(bufferPool);
+        return new JsonArrayBuilderImpl(jsonContext);
     }
 
     @Override
     public Map<String, ?> getConfigInUse() {
-        return config;
+        return jsonContext.config();
     }
+
 }
